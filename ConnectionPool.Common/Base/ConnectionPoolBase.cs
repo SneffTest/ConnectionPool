@@ -1,12 +1,13 @@
 ﻿using ConnectionPool.Common.Exceptions;
 using ConnectionPool.Common.Interfaces;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Data;
 
 namespace ConnectionPool.Common.Base
 {
-    public abstract class ConnectionPoolBase<TConn, TConnKey, TBaseConnection> : IConnectionPool<TConn, TConnKey, TBaseConnection>
+    public abstract class ConnectionPoolBase<TConn, TConnKey, TBaseConnection> : IConnectionPool<TConn, TConnKey, TBaseConnection>, IDisposable
         where TConn : ConnectionBase<TBaseConnection, TConnKey>, new()
         where TConnKey : notnull
         where TBaseConnection : class, IDbConnection, new()
@@ -28,7 +29,12 @@ namespace ConnectionPool.Common.Base
         /// <param name="connectionString">The connection string</param>
         public void SetConnectionString(string connectionString)
         {
+            var currentConnectionKeys = _connections.Keys;
             this._connectionString = connectionString;
+            foreach (var connKey in currentConnectionKeys)
+            {
+                CloseAndRemoveConn(connKey);
+            }
         }
 
         /// <summary>
@@ -126,6 +132,15 @@ namespace ConnectionPool.Common.Base
         public int GetConnectionCount()
         {
             return _connections.Count;
+        }
+
+        public void Dispose()
+        {
+            var currentConnectionKeys = _connections.Keys;
+            foreach (var connKey in currentConnectionKeys)
+            {
+                CloseAndRemoveConn(connKey);
+            }
         }
     }
 }

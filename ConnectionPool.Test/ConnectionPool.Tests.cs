@@ -16,7 +16,7 @@ namespace ConnectionPool.Test
         [OneTimeSetUp]
         public void Init()
         {
-            var connectionFactory= new Mock<IConnectionFactory<Connection, string, OracleConnection>>();
+            var connectionFactory = new Mock<IConnectionFactory<Connection, string, OracleConnection>>();
             connectionFactory.Setup(x => x.CreateConnection()).Returns(() =>
             {
                 return new Connection()
@@ -32,7 +32,7 @@ namespace ConnectionPool.Test
               .BuildServiceProvider();
         }
 
-        [Test]
+        [Test(Description = "Check, the correct number of connections are opened")]
         [TestCase(1)]
         [TestCase(10)]
         public void OpenConnections(int connectionCount)
@@ -48,7 +48,7 @@ namespace ConnectionPool.Test
             Assert.That(count + connectionCount, Is.EqualTo(connPool.GetConnectionCount()));
         }
 
-        [Test]
+        [Test(Description = "Check, the correct number of connections are opened and closed")]
         [TestCase(1)]
         [TestCase(10)]
         [TestCase(100)]
@@ -67,7 +67,7 @@ namespace ConnectionPool.Test
             Assert.That(count, Is.EqualTo(connPool.GetConnectionCount()));
         }
 
-        [Test]
+        [Test(Description = "Check, the opened connections can be used")]
         [TestCase(1)]
         [TestCase(10)]
         [TestCase(100)]
@@ -84,7 +84,7 @@ namespace ConnectionPool.Test
                 connList.Add(conn);
             }
 
-            foreach(var conn in connList)
+            foreach (var conn in connList)
             {
                 connPool.checkOut(conn.ConnID);
                 connPool.checkIn(conn);
@@ -98,7 +98,7 @@ namespace ConnectionPool.Test
             Assert.That(count, Is.EqualTo(connPool.GetConnectionCount()));
         }
 
-        [Test]
+        [Test(Description = "Check, errors when the connection is not found on checkIn")]
         [TestCase("dummyConnectionID1")]
         [TestCase("dummyConnectionID2")]
         [TestCase("dummyConnectionID3")]
@@ -111,7 +111,7 @@ namespace ConnectionPool.Test
             });
         }
 
-        [Test]
+        [Test(Description = "Check, errors when the connection is not found on checkOut")]
         [TestCase("dummyConnectionID1")]
         [TestCase("dummyConnectionID2")]
         [TestCase("dummyConnectionID3")]
@@ -122,6 +122,17 @@ namespace ConnectionPool.Test
                 var connPool = _serviceProvider.GetService<IConnectionPool<Connection, string, OracleConnection>>();
                 connPool.checkOut(connID);
             });
+        }
+
+        [Test(Description = "Check, all connection is closed when connectionstring was changed")]
+        public void CheckConnectionAreCleanedUp()
+        {
+            var connPool = _serviceProvider.GetService<IConnectionPool<Connection, string, OracleConnection>>();
+
+            var conn = connPool.checkOutNew();
+            connPool.SetConnectionString("dummy");
+
+            Assert.That(0, Is.EqualTo(connPool.GetConnectionCount()));
         }
     }
 }
